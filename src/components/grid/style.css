@@ -1,0 +1,10 @@
+.row{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+.spacer{
+    /*Keyboard is 10% of a max width of 40pc - this won't work when scaled weirdly*/
+    height: calc(4pc * 3);
+}

@@ -1,0 +1,25 @@
+.row {
+    display: flex;
+    width: 13pc;
+    align-items: center;
+    padding: 5px 0;
+}
+
+.container {
+    flex-grow: 1;
+}
+
+.inner {
+    background: gainsboro;
+    border-radius: 100px;
+    text-align: right;
+    font-family: monospace;
+    font-weight: bold;
+    padding: 4px 8px 4px 4px;
+}
+
+.label {
+    color: white;
+    margin-right: 6px;
+    min-width: 20px;
+}

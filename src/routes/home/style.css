@@ -1,0 +1,122 @@
+.home {
+	display: flex;
+	justify-content: center;
+	margin-top:3pc;
+}
+
+@font-face {
+	font-family: 'Rajdhani';
+	font-style: normal;
+	font-weight: 300;
+	src: url('/assets/fonts/rajdhani-v15-latin-300.eot'); /* IE9 Compat Modes */
+	src: local(''),
+	url('/assets/fonts/rajdhani-v15-latin-300.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+	url('/assets/fonts/rajdhani-v15-latin-300.woff2') format('woff2'), /* Super Modern Browsers */
+	url('/assets/fonts/rajdhani-v15-latin-300.woff') format('woff'), /* Modern Browsers */
+	url('/assets/fonts/rajdhani-v15-latin-300.ttf') format('truetype'), /* Safari, Android, iOS */
+	url('/assets/fonts/rajdhani-v15-latin-300.svg#Rajdhani') format('svg'); /* Legacy iOS */
+}
+
+.header{
+	height: 3pc;
+	line-height: 3pc;
+	background: #fd746c;  /* fallback for old browsers */
+	background: -webkit-linear-gradient(to right, #ff9068, #fd746c);  /* Chrome 10-25, Safari 5.1-6 */
+	background: linear-gradient(to right, #ff9068, #fd746c); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+	color: white;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+}
+
+.header h1{
+	font-weight: 300;
+	padding: 0;
+	margin: 0;
+	text-align: center;
+	font-family: 'Rajdhani', sans-serif;
+}
+
+.textarea{
+	width: 100%;
+	height: 10pc;
+	color: white;
+	background: none;
+	box-shadow: inset 2px 2px 5px #1e1e1e, inset -5px -5px 10px #484848;
+	border-radius: 15px;
+	padding: 20px;
+	border: 1px solid #898989;
+	font-family: 'Rajdhani', sans-serif;
+}
+
+.button {
+	width: 100%;
+	/*float: left;*/
+	display: block;
+	margin: 1em 0;
+	border: none;
+	background: none;
+	color: inherit;
+	vertical-align: middle;
+	position: relative;
+	z-index: 1;
+	border-radius: 100px;
+	-webkit-backface-visibility: hidden;
+	-moz-osx-font-smoothing: grayscale;
+
+	padding: 0.8em 0em;
+	color: #fff;
+}
+.button:focus {
+	outline: none;
+}
+.button > span {
+	vertical-align: middle;
+}
+
+.button.button--inverted {
+	color: #ff9068;
+}
+.button::before,
+.button::after {
+	content: '';
+	border-radius: inherit;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: -1;
+	-webkit-transition: -webkit-transform 0.3s, background-color 0.3s;
+	transition: transform 0.3s, background-color 0.3s;
+	-webkit-transition-timing-function: cubic-bezier(0.25, 0, 0.3, 1);
+	transition-timing-function: cubic-bezier(0.25, 0, 0.3, 1);
+}
+.button::before {
+	border: 2px solid #ff9068;
+}
+.button.button--inverted::before {
+	border-color: #fff;
+}
+.button::after {
+	background: #ff9068;
+}
+.button.button--inverted::after {
+	background: #fff;
+}
+.button:hover::before {
+	-webkit-transform: scale3d(1, 1, 1);
+	transform: scale3d(1, 1, 1);
+}
+.button::before,
+.button:hover::after {
+	-webkit-transform: scale3d(0.9, 0.9, 1);
+	transform: scale3d(0.9, 0.9, 1);
+}
+.button:hover::after {
+	background-color: #fd746c;
+}
+.button.button--inverted:hover::after {
+	background-color: #fff;
+}

@@ -1,0 +1,48 @@
+.cell{
+    --size: 35px;
+    font-size: 1.5em;
+    width: var(--size);
+    height: var(--size);
+    line-height: var(--size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-content: center;
+    justify-items: center;
+    text-align: center;
+    border: 3px solid #3e3e3e;
+    background: black;
+    margin: 1px;
+}
+
+.cell.small{
+    --size:19px;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin: -1px;
+    border-width: 1px;
+}
+
+.row.disabled .cell{
+    /*height: 10px;*/
+}
+
+.row{
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    color: white;
+}
+
+.match{
+    background-color: green;
+}
+
+.position{
+    background-color: #ffa200;
+}
+
+.invalid{
+    color: red;
+}

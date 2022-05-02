@@ -1,0 +1,7 @@
+.wordle{
+    padding: 4px 2px;
+}
+
+.wordle.small{
+padding: 10px 5px;
+}
