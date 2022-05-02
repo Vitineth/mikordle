@@ -82,7 +82,7 @@ export function localStorageSetItem(key: string, value: string): void {
  * @param key the key to retrieve
  * @return the value if present or set today, or null if not set or not set today
  */
-function getTimeLimitedLocalStorageEntry(key: string): string | null {
+export function getTimeLimitedLocalStorageEntry(key: string): string | null {
     try {
         const value = localStorageGetItem(key);
         if (value === null) return null;
@@ -104,7 +104,7 @@ function getTimeLimitedLocalStorageEntry(key: string): string | null {
  * @param key the key to set
  * @param value the value to set
  */
-function setTimeLimitedLocalStorageEntry(key: string, value: string): void {
+export function setTimeLimitedLocalStorageEntry(key: string, value: string): void {
     localStorageSetItem(key, JSON.stringify({
         set: getToday(),
         value: value,

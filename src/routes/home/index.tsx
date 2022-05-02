@@ -4,11 +4,11 @@ import {useEffect, useState} from "preact/hooks";
 import {
     addToBoardAndTotalMetrics,
     completeToday,
-    Dictionary,
+    Dictionary, getTimeLimitedLocalStorageEntry,
     getToday, getTodayStats,
     getWords,
     isTodayComplete, localStorageGetItem, localStorageSetItem,
-    mulberry32, saveTodayStats
+    mulberry32, saveTodayStats, setTimeLimitedLocalStorageEntry
 } from "../../utils/data";
 import {ValidWords} from "../../utils/types";
 import style from './style.css';
@@ -218,7 +218,7 @@ const Home: FunctionalComponent = () => {
     // TODO: this doesn't handle the day!
     // Stage holds where you are currently in the game. If the game has already been started, this should be loaded from
     // local storage
-    const [stage, setStage] = useState(Number(localStorageGetItem('mikordle-stage') ?? 0));
+    const [stage, setStage] = useState(Number(getTimeLimitedLocalStorageEntry('mikordle-stage') ?? 0));
 
     // Records if the game for today has already been completed. This should be loaded from local storage so it is
     // persistent
@@ -304,7 +304,7 @@ const Home: FunctionalComponent = () => {
                             completeToday();
                             setFinished(true);
                         } else {
-                            localStorageSetItem('mikordle-stage', String(stage + 1));
+                            setTimeLimitedLocalStorageEntry('mikordle-stage', String(stage + 1));
                             setStage((s) => s + 1);
                         }
 
