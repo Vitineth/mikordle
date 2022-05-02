@@ -100,20 +100,25 @@ export const enter = (instance: Omit<WordleState, 'width' | 'height'>, width: nu
     if (entry.letter.length !== entry.width) return;
 
     // On enter we work out the result
+    // In response to issue #1 - this is now done in two passes, one to determine matches
+    // and then a second for position. This ensures that a position match can't accidentally
+    // eliminate an actual match, even at the cost of another iteration
     let targetCopy = instance.target + "";
     for (let i = 0; i < entry.letter.length; i++) {
         if (targetCopy[i] === entry.letter[i].letter) {
             entry.letter[i].state = 'MATCH';
             targetCopy = `${targetCopy.substring(0, i)}_${targetCopy.substring(i + 1)}`;
+        }
+    }
+    for (let i = 0; i < entry.letter.length; i++) {
+        if (entry.letter[i].state === 'MATCH') continue;
+        const letter = entry.letter[i].letter;
+        const index = targetCopy.split('').findIndex((e) => e === letter);
+        if (index === -1) {
+            entry.letter[i].state = 'INVALID';
         } else {
-            const letter = entry.letter[i].letter;
-            const index = targetCopy.split('').findIndex((e) => e === letter);
-            if (index === -1) {
-                entry.letter[i].state = 'INVALID';
-            } else {
-                entry.letter[i].state = 'POSITION';
-                targetCopy = `${targetCopy.substring(0, index)}_${targetCopy.substring(index + 1)}`;
-            }
+            entry.letter[i].state = 'POSITION';
+            targetCopy = `${targetCopy.substring(0, index)}_${targetCopy.substring(index + 1)}`;
         }
     }
 
