@@ -331,8 +331,8 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
                             {/*provide nice aesthetics*/}
                             {state.records.map((e, i) => {
                                 const entry = typeof (e) === 'boolean'
-                                    ? (<span className={style.result}>❌ X/{state.letterCount}</span>)
-                                    : (<span className={style.result}>✅ {e}/{state.letterCount}</span>);
+                                    ? (<span className={style.result}>❌ X/{state.guessesAllowed}</span>)
+                                    : (<span className={style.result}>✅ {e}/{state.guessesAllowed}</span>);
 
                                 // If its the end of a column, add a line break
                                 if ((i + 1) % state.columns === 0) return (
