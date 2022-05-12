@@ -1,6 +1,6 @@
-import {createContext, FunctionalComponent, h, Fragment, createRef} from 'preact';
+import { createContext, FunctionalComponent, h, Fragment, createRef } from 'preact';
 import Mikordle from "../../components/mikorle/mikordle";
-import {useEffect, useState} from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import {
     addToBoardAndTotalMetrics,
     completeToday,
@@ -10,9 +10,11 @@ import {
     isTodayComplete, localStorageGetItem, localStorageSetItem,
     mulberry32, saveTodayStats, setTimeLimitedLocalStorageEntry
 } from "../../utils/data";
-import {ValidWords} from "../../utils/types";
+import { ValidWords, Communicator } from "../../utils/types";
 import style from './style.css';
 import DistributionViewer from "../../components/distribution/distribution";
+import Connect from "../../components/connect/connect";
+import { MikordleChat } from "../../utils/messenger";
 
 const withProfile = require('preact-perf-profiler').default;
 
@@ -117,6 +119,7 @@ const AutoSelectMikordle: FunctionalComponent<AutoSelectProps> = (
     // If it is a DictionaryTuple it means that it has been loaded successfully, undefined means it has not started
     // loading and Error means it failed
     const [words, setWords] = useState<DictionaryTuple | undefined | Error>(undefined);
+    const [communicator, setCommunicator] = useState<MikordleChat | undefined>(undefined);
 
     useEffect(() => {
         const fetch = async () => {
@@ -161,7 +164,6 @@ const AutoSelectMikordle: FunctionalComponent<AutoSelectProps> = (
         fetch().catch((e) => setWords(e));
     }, [amount, length]);
 
-
     // On error just print out the error and be sad :(
     if (words instanceof Error) {
         return (<div className="error">Error: could not load words: {words.message}</div>)
@@ -172,17 +174,21 @@ const AutoSelectMikordle: FunctionalComponent<AutoSelectProps> = (
     } else {
         // Otherwise provide the complete valid word list through context and then start a mikordle game!
         return (
-            <ValidWords.Provider value={words[0]}>
-                <Mikordle
-                    letterCount={length}
-                    guessesAllowed={guesses}
-                    columns={columns}
-                    words={words[1]}
-                    validWords={words[0]}
-                    onEnd={onEnd}
-                    continuing={continuing}
-                />
-            </ValidWords.Provider>
+            <Communicator.Provider value={communicator}>
+                <ValidWords.Provider value={words[0]}>
+                    <Connect onSet={setCommunicator} />
+                    <Mikordle
+                        letterCount={length}
+                        guessesAllowed={guesses}
+                        columns={columns}
+                        words={words[1]}
+                        validWords={words[0]}
+                        onEnd={onEnd ?? (() => false)}
+                        continuing={continuing ?? false}
+                        communicator={communicator}
+                    />
+                </ValidWords.Provider>
+            </Communicator.Provider>
         )
     }
 }
@@ -257,11 +263,11 @@ const Home: FunctionalComponent = () => {
                     <h1>Mikordle</h1>
                 </div>
                 <div className={style.home}>
-                    <div style={{marginTop: '1pc'}}>
+                    <div style={{ marginTop: '1pc' }}>
                         <textarea ref={ref} className={style.textarea}>
                             {`Mikordle (https://mikordle.xiomi.org)\n--\n${copyStats}`}
                         </textarea>
-                        <br/>
+                        <br />
                         <button className={style.button} onClick={() => {
                             if (ref.current === null) return;
                             const element: HTMLTextAreaElement = ref.current;
@@ -273,7 +279,7 @@ const Home: FunctionalComponent = () => {
                         }}>
                             Copy to Clipboard
                         </button>
-                        <DistributionViewer/>
+                        <DistributionViewer />
                     </div>
                 </div>
             </>

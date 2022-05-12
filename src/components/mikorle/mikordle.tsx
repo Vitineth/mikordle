@@ -1,11 +1,12 @@
-import {FunctionalComponent, h, Fragment, Component, RenderableProps, ComponentChild} from "preact";
-import {add, enter, remove, WordleState} from "../../utils/types";
+import { FunctionalComponent, h, Fragment, Component, RenderableProps, ComponentChild } from "preact";
+import { add, enter, remove, WordleState } from "../../utils/types";
 import WordleGrid from "../grid/grid";
 import Keyboard from "../keyboard/keyboard";
-import {Dictionary, getIntermediateState, saveIntermediateState} from "../../utils/data";
+import { Dictionary, getIntermediateState, saveIntermediateState } from "../../utils/data";
 import style from './style.css';
 import DictionaryLookup from "../dictionary/dictionary";
-import {OnEndFunction} from "../../routes/home";
+import { OnEndFunction } from "../../routes/home";
+import { MikordleChat } from "../../utils/messenger";
 
 /**
  * The state of the game when it has been won
@@ -91,6 +92,8 @@ export interface MikordleProps {
      * If this board should show a continue button once it has been finished
      */
     continuing?: boolean;
+
+    communicator?: MikordleChat;
 }
 
 /**
@@ -116,7 +119,7 @@ const addLetter = (state: GameState, letter: string): GameState => {
         states: state.states.map((e) => {
             // Completed baords should not be updated, it would fuck things up
             if (e.complete) return e;
-            const copy = {...e};
+            const copy = { ...e };
             add(copy, state.letterCount, state.guessesAllowed, letter);
             return copy;
         })
@@ -140,7 +143,7 @@ const removeLetter = (state: GameState): GameState => {
         // And for each state, remove the letter if its not complete
         states: state.states.map((e) => {
             if (e.complete) return e;
-            const copy = {...e};
+            const copy = { ...e };
             remove(copy);
             return copy;
         })
@@ -165,7 +168,7 @@ const onEnter = (state: GameState, validWords: string[]): GameState | WinState =
     // Offload the work to the enter() function and make it perform on a copy of the board state
     const states = state.states.map((e) => {
         if (e.complete) return e;
-        const copy = {...e};
+        const copy = { ...e };
         enter(copy, state.letterCount, state.guessesAllowed);
         return copy;
     });
@@ -193,6 +196,8 @@ const onEnter = (state: GameState, validWords: string[]): GameState | WinState =
 
 class Mikordle extends Component<MikordleProps, GameState | WinState> {
 
+    private onExit: Function[] = [];
+
     constructor(props: MikordleProps, context: never) {
         super(props, context);
 
@@ -205,7 +210,7 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
             letterCount: props.letterCount,
             columns: props.columns,
             guessesAllowed: props.guessesAllowed,
-            states: props.words.map((target) => ({rows: [], complete: false, target})),
+            states: props.words.map((target) => ({ rows: [], complete: false, target })),
         };
 
         // Bind a few functions for safe calling no matter where they are passed. Javascript be weird sometimes
@@ -223,6 +228,28 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
      */
     shouldComponentUpdate(nextProps: Readonly<MikordleProps>, nextState: Readonly<GameState | WinState>, nextContext: never): boolean {
         saveIntermediateState(nextState, this.props);
+        if (this.props.communicator !== nextProps.communicator) {
+            if (nextProps.communicator) {
+                this.onExit.push(nextProps.communicator.on('key-pressed', (key) => {
+                    this.onKey({ keyCode: key.charCodeAt(0), key }, true);
+                }));
+                this.onExit.push(nextProps.communicator.on('key-removed', () => {
+                    this.onKey({ keyCode: 8, key: '' }, true);
+                }));
+                this.onExit.push(nextProps.communicator.on('enter-pressed', () => {
+                    this.onKey({ keyCode: 13, key: '' }, true);
+                }));
+                this.onExit.push(nextProps.communicator.on('initialise', (state) => {
+                    this.setState(state);
+                }))
+                this.onExit.push(nextProps.communicator.on('request', () => {
+                    console.log('got request');
+                    if (this.state.type !== 'GameState') return;
+                    nextProps.communicator?.initialise(this.state);
+                }));
+            }
+            return true;
+        }
         return super.shouldComponentUpdate?.(nextProps, nextState, nextContext) ?? true;
     }
 
@@ -230,6 +257,7 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
      * Binds a listener to the window into 'keydown' to avoid having to focus on things
      */
     componentDidMount(): void {
+        console.log('mounting');
         window.addEventListener('keydown', this.onKey);
     }
 
@@ -237,7 +265,9 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
      * Unbinds a listener to the window into 'keydown' to clean up from the mounting
      */
     componentWillUnmount(): void {
+        console.log('unmounting');
         window.removeEventListener('keydown', this.onKey);
+        this.onExit.forEach((e) => e());
     }
 
     /**
@@ -285,7 +315,8 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
      * On backspace being pressed it will be passed on to {@link removeLetter}
      * @param e the event that took place, requires a numerical `keyCode` and a string `key`
      */
-    onKey(e: { keyCode: number; key: string }): void {
+    onKey(e: { keyCode: number; key: string }, synthetic: boolean = false): void {
+        console.log(e, synthetic);
         // Ignore undefined events - this is a bit weird but seemed to turn up in testing
         if (!e) return;
 
@@ -295,18 +326,21 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
         // If its a letter and the function is valid, add it and update the state
         if (e.keyCode >= 65 && e.keyCode <= 90 && addLetter) this.setState((s) => {
             if (s.type !== 'GameState') return s;
+            if (this.props.communicator && !synthetic) this.props.communicator.keyPressed(e.key.toUpperCase());
             return addLetter(s, e.key.toUpperCase());
         });
 
         // If its a backspace and the remove letter function is valid, remove the letter and update the state
         if (e.keyCode === 8 && removeLetter) this.setState((s) => {
             if (s.type !== 'GameState') return s;
+            if (this.props.communicator && !synthetic) this.props.communicator.keyRemoved();
             return removeLetter(s);
         });
 
         // On enter, try and submit, optionally calling end if it transitions to the win state
         if (e.keyCode === 13 && onEnter) this.setState((s) => {
             if (s.type !== 'GameState') return s;
+            if (this.props.communicator && !synthetic) this.props.communicator.enterPressed();
 
             const result = onEnter(s, this.props.validWords);
             if (result.type === 'WinState' && !this.props.continuing) {
@@ -317,6 +351,7 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
     }
 
     render(props?: RenderableProps<MikordleProps>, state?: Readonly<GameState | WinState>): ComponentChild {
+        console.log(this.props);
         if (state === undefined) return (<div>Unknown state</div>);
         if (props === undefined) return (<div>Unknown props</div>);
 
@@ -326,7 +361,7 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
                 <div>
                     {/*Div to contain all the results in place*/}
                     <div className={style.resultContainer}>
-                        <div style={{display: 'inline-block'}}>
+                        <div style={{ display: 'inline-block' }}>
                             {/*Produce a grid of results that matches the structure of the table - use emojis to*/}
                             {/*provide nice aesthetics*/}
                             {state.records.map((e, i) => {
@@ -385,9 +420,9 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
                     entries={state.states}
                 />
                 <Keyboard
-                    onBack={(): void => this.onKey({keyCode: 8, key: ''})}
-                    onEnter={(): void => this.onKey({keyCode: 13, key: ''})}
-                    onKey={(k): void => this.onKey({keyCode: k.charCodeAt(0), key: k})}
+                    onBack={(): void => this.onKey({ keyCode: 8, key: '' })}
+                    onEnter={(): void => this.onKey({ keyCode: 13, key: '' })}
+                    onKey={(k): void => this.onKey({ keyCode: k.charCodeAt(0), key: k })}
                     states={state.states}
                     columns={state.columns}
                 />

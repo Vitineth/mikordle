@@ -1,6 +1,8 @@
 import {createContext} from "preact";
+import { MikordleChat } from "./messenger";
 
 export const ValidWords = createContext<string[]>([]);
+export const Communicator = createContext<MikordleChat|undefined>(undefined);
 
 export interface Letter {
     /**
