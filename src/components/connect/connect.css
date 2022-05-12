@@ -1,0 +1,30 @@
+.connect {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 45px;
+    height: 45px;
+    z-index: 10;
+}
+
+.connect svg {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+}
+
+.connect.open {
+    background: #313334;
+    color: white;
+    width: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.connect strong{
+    font-family: monospace;
+    font-weight: bolder;
+    font-size: 1.3em;
+    margin-left: 10px;
+}
