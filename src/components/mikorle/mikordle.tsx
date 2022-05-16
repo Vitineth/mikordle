@@ -216,6 +216,33 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
         // Bind a few functions for safe calling no matter where they are passed. Javascript be weird sometimes
         this.onKey = this.onKey.bind(this);
         this.end = this.end.bind(this);
+        this.bindToCommunicator = this.bindToCommunicator.bind(this);
+    }
+
+    /**
+     * Binds the interaction with the given communicator
+     * @param communicator the communicator to which the actions should be bound
+     * @private
+     */
+    private bindToCommunicator(communicator: MikordleChat){
+        console.log('Binding to communicator');
+        this.onExit.push(communicator.on('key-pressed', (key) => {
+            this.onKey({ keyCode: key.charCodeAt(0), key }, true);
+        }));
+        this.onExit.push(communicator.on('key-removed', () => {
+            this.onKey({ keyCode: 8, key: '' }, true);
+        }));
+        this.onExit.push(communicator.on('enter-pressed', () => {
+            this.onKey({ keyCode: 13, key: '' }, true);
+        }));
+        this.onExit.push(communicator.on('initialise', (state) => {
+            this.setState(state);
+        }))
+        this.onExit.push(communicator.on('request', () => {
+            console.log('got request');
+            if (this.state.type !== 'GameState') return;
+            communicator?.initialise(this.state);
+        }));
     }
 
     /**
@@ -230,23 +257,7 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
         saveIntermediateState(nextState, this.props);
         if (this.props.communicator !== nextProps.communicator) {
             if (nextProps.communicator) {
-                this.onExit.push(nextProps.communicator.on('key-pressed', (key) => {
-                    this.onKey({ keyCode: key.charCodeAt(0), key }, true);
-                }));
-                this.onExit.push(nextProps.communicator.on('key-removed', () => {
-                    this.onKey({ keyCode: 8, key: '' }, true);
-                }));
-                this.onExit.push(nextProps.communicator.on('enter-pressed', () => {
-                    this.onKey({ keyCode: 13, key: '' }, true);
-                }));
-                this.onExit.push(nextProps.communicator.on('initialise', (state) => {
-                    this.setState(state);
-                }))
-                this.onExit.push(nextProps.communicator.on('request', () => {
-                    console.log('got request');
-                    if (this.state.type !== 'GameState') return;
-                    nextProps.communicator?.initialise(this.state);
-                }));
+                this.bindToCommunicator(nextProps.communicator);
             }
             return true;
         }
@@ -257,8 +268,9 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
      * Binds a listener to the window into 'keydown' to avoid having to focus on things
      */
     componentDidMount(): void {
-        console.log('mounting');
+        console.log('mounting', this.props);
         window.addEventListener('keydown', this.onKey);
+        if(this.props.communicator) this.bindToCommunicator(this.props.communicator);
     }
 
     /**
@@ -316,7 +328,6 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
      * @param e the event that took place, requires a numerical `keyCode` and a string `key`
      */
     onKey(e: { keyCode: number; key: string }, synthetic: boolean = false): void {
-        console.log(e, synthetic);
         // Ignore undefined events - this is a bit weird but seemed to turn up in testing
         if (!e) return;
 
@@ -351,7 +362,6 @@ class Mikordle extends Component<MikordleProps, GameState | WinState> {
     }
 
     render(props?: RenderableProps<MikordleProps>, state?: Readonly<GameState | WinState>): ComponentChild {
-        console.log(this.props);
         if (state === undefined) return (<div>Unknown state</div>);
         if (props === undefined) return (<div>Unknown props</div>);
 
