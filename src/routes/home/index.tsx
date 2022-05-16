@@ -200,7 +200,7 @@ const AutoSelectMikordle: FunctionalComponent<AutoSelectProps> = (
     }
  which enabled advanced profiling statistics
  */
-const ProfiledAuto = withProfile(AutoSelectMikordle);
+const ProfiledAuto = typeof(window) === 'undefined' ? AutoSelectMikordle : withProfile(AutoSelectMikordle);
 
 /**
  * If the game is running in debug mode
