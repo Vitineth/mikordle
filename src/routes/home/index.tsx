@@ -1,6 +1,6 @@
-import { createContext, FunctionalComponent, h, Fragment, createRef } from 'preact';
+import {createContext, FunctionalComponent, h, Fragment, createRef} from 'preact';
 import Mikordle from "../../components/mikorle/mikordle";
-import { useEffect, useState } from "preact/hooks";
+import {useEffect, useState} from "preact/hooks";
 import {
     addToBoardAndTotalMetrics,
     completeToday,
@@ -10,11 +10,11 @@ import {
     isTodayComplete, localStorageGetItem, localStorageSetItem,
     mulberry32, saveTodayStats, setTimeLimitedLocalStorageEntry
 } from "../../utils/data";
-import { ValidWords, Communicator } from "../../utils/types";
+import {ValidWords, Communicator} from "../../utils/types";
 import style from './style.css';
 import DistributionViewer from "../../components/distribution/distribution";
 import Connect from "../../components/connect/connect";
-import { MikordleChat } from "../../utils/messenger";
+import {MikordleChat} from "../../utils/messenger";
 
 const withProfile = require('preact-perf-profiler').default;
 
@@ -119,7 +119,6 @@ const AutoSelectMikordle: FunctionalComponent<AutoSelectProps> = (
     // If it is a DictionaryTuple it means that it has been loaded successfully, undefined means it has not started
     // loading and Error means it failed
     const [words, setWords] = useState<DictionaryTuple | undefined | Error>(undefined);
-    const [communicator, setCommunicator] = useState<MikordleChat | undefined>(undefined);
 
     useEffect(() => {
         const fetch = async () => {
@@ -174,27 +173,32 @@ const AutoSelectMikordle: FunctionalComponent<AutoSelectProps> = (
     } else {
         // Otherwise provide the complete valid word list through context and then start a mikordle game!
         return (
-            <Communicator.Provider value={communicator}>
-                <ValidWords.Provider value={words[0]}>
-                    <Connect onSet={setCommunicator} />
-                    <Mikordle
-                        letterCount={length}
-                        guessesAllowed={guesses}
-                        columns={columns}
-                        words={words[1]}
-                        validWords={words[0]}
-                        onEnd={onEnd ?? (() => false)}
-                        continuing={continuing ?? false}
-                        communicator={communicator}
-                    />
-                </ValidWords.Provider>
-            </Communicator.Provider>
+            <Communicator.Consumer>
+                {communicator => {
+                    return <ValidWords.Provider value={words[0]}>
+                        <Mikordle
+                            letterCount={length}
+                            guessesAllowed={guesses}
+                            columns={columns}
+                            words={words[1]}
+                            validWords={words[0]}
+                            onEnd={onEnd ?? (() => false)}
+                            continuing={continuing ?? false}
+                            communicator={communicator}
+                        />
+                    </ValidWords.Provider>
+                }}
+            </Communicator.Consumer>
         )
     }
 }
 
 /**
- * A wrapper around {@link AutoSelectMikordle} which enabled advanced profiling statistics
+ * A wrapper around
+ {@link
+        AutoSelectMikordle
+    }
+ which enabled advanced profiling statistics
  */
 const ProfiledAuto = withProfile(AutoSelectMikordle);
 
@@ -215,121 +219,136 @@ const columns = DEBUG ? [1] : [1, 2, 2, 2, 2, 4];
  */
 const guesses = DEBUG ? [6] : [6, 7, 9, 13, 21, 37];
 /**
- * A wrapper around {@link ProfiledAuto} and {@link AutoSelectMikordle} which will swap based on whether this is running
+ * A wrapper around
+ {@link
+        ProfiledAuto
+    }
+ and
+ {@link
+        AutoSelectMikordle
+    }
+ which will swap based on whether this is running
  * in debug mode. Increasing profiling support in debug mode and using the raw element when not.
  */
 const Auto = DEBUG ? ProfiledAuto : AutoSelectMikordle;
 
 const Home: FunctionalComponent = () => {
-    // TODO: this doesn't handle the day!
-    // Stage holds where you are currently in the game. If the game has already been started, this should be loaded from
-    // local storage
-    const [stage, setStage] = useState(Number(getTimeLimitedLocalStorageEntry('mikordle-stage') ?? 0));
+        // TODO: this doesn't handle the day!
+        // Stage holds where you are currently in the game. If the game has already been started, this should be loaded from
+        // local storage
+        const [stage, setStage] = useState(Number(getTimeLimitedLocalStorageEntry('mikordle-stage') ?? 0));
 
-    // Records if the game for today has already been completed. This should be loaded from local storage so it is
-    // persistent
-    const [finished, setFinished] = useState(isTodayComplete());
+        // Records if the game for today has already been completed. This should be loaded from local storage so it is
+        // persistent
+        const [finished, setFinished] = useState(isTodayComplete());
 
-    // The copy-paste statistics for todays game. if provided in local storage for today that should be loaded,
-    // otherwise it is just an empty string that will be built up
-    const [copyStats, setCopyStats] = useState(getTodayStats() ?? '');
+        // The copy-paste statistics for todays game. if provided in local storage for today that should be loaded,
+        // otherwise it is just an empty string that will be built up
+        const [copyStats, setCopyStats] = useState(getTodayStats() ?? '');
 
-    // A reference to the textarea used to present the values - this is only populated on finish but as its a hook its
-    // calling order needs to be consistent
-    const ref = createRef();
+        // The currently active communicator which will communicate with another client
+        const [communicator, setCommunicator] = useState<MikordleChat | undefined>(undefined);
 
-    /**
-     * Wrapper around setCopyStats which will cache the values into the local storage when called
-     * @param s the new value for the copy statistics
-     */
-    const saveCopyStats = (s: string) => {
-        saveTodayStats(s);
-        setCopyStats(s);
-    }
-    /**
-     * Wrapper around saveCopyStats which appends the given value instead of setting it
-     * @param s the value to append
-     */
-    const addToCopyStats = (s: string) => saveCopyStats(copyStats + s);
+        // A reference to the textarea used to present the values - this is only populated on finish but as its a hook its
+        // calling order needs to be consistent
+        const ref = createRef();
 
-    // If the game is finished, it should look like
-    // [textarea]
-    // [copy to clipboard]
-    // [distribution of guesses]
-    if (finished) {
-        return (
-            <>
-                <div className={style.header}>
-                    <h1>Mikordle</h1>
-                </div>
-                <div className={style.home}>
-                    <div style={{ marginTop: '1pc' }}>
+        /**
+         * Wrapper around setCopyStats which will cache the values into the local storage when called
+         * @param s the new value for the copy statistics
+         */
+        const saveCopyStats = (s: string) => {
+            saveTodayStats(s);
+            setCopyStats(s);
+        }
+        /**
+         * Wrapper around saveCopyStats which appends the given value instead of setting it
+         * @param s the value to append
+         */
+        const addToCopyStats = (s: string) => saveCopyStats(copyStats + s);
+
+        // If the game is finished, it should look like
+        // [textarea]
+        // [copy to clipboard]
+        // [distribution of guesses]
+        if (finished) {
+            return (
+                <>
+                    <div className={style.header}>
+                        <h1>Mikordle</h1>
+                    </div>
+                    <div className={style.home}>
+                        <div style={{marginTop: '1pc'}}>
                         <textarea ref={ref} className={style.textarea}>
                             {`Mikordle (https://mikordle.xiomi.org)\n--\n${copyStats}`}
                         </textarea>
-                        <br />
-                        <button className={style.button} onClick={() => {
-                            if (ref.current === null) return;
-                            const element: HTMLTextAreaElement = ref.current;
+                            <br/>
+                            <button className={style.button} onClick={() => {
+                                if (ref.current === null) return;
+                                const element: HTMLTextAreaElement = ref.current;
 
-                            element.select();
-                            element.setSelectionRange(0, 99999);
+                                element.select();
+                                element.setSelectionRange(0, 99999);
 
-                            void navigator.clipboard.writeText(element.value);
-                        }}>
-                            Copy to Clipboard
-                        </button>
-                        <DistributionViewer />
+                                void navigator.clipboard.writeText(element.value);
+                            }}>
+                                Copy to Clipboard
+                            </button>
+                            <DistributionViewer/>
+                        </div>
                     </div>
-                </div>
+                </>
+            );
+        }
+
+        // If its not finished then it should start an Auto selecting word game with all the properties for the current
+        // stage.
+        return (
+            <>
+                <Communicator.Provider value={communicator}>
+                    <Connect onSet={setCommunicator}/>
+                    <div className={style.header}>
+                        <h1>Mikordle</h1>
+                    </div>
+                    <div className={style.home}>
+                        {<Auto
+                            key={`stage${stage}`}
+                            length={5}
+                            guesses={guesses[stage]}
+                            columns={columns[stage]}
+                            amount={mapping[stage]}
+                            onEnd={(losses: any, distribution: any, stats: (number | false)[][]) => {
+                                // On ending the metrics need to be merged into the global ones to produce a consistent result
+                                addToBoardAndTotalMetrics(mapping[stage], Object.keys(distribution).length, losses, distribution);
+
+                                // Either move on to the next stage or if this is the last stage (there are no further mappings)
+                                // then set that we are finished and cache the value into local storage for today
+                                if (mapping[stage + 1] === undefined) {
+                                    completeToday();
+                                    setFinished(true);
+                                } else {
+                                    setTimeLimitedLocalStorageEntry('mikordle-stage', String(stage + 1));
+                                    setStage((s) => s + 1);
+                                }
+
+                                // Also convert the statistics into a format which is nice and copy-pastable and add it to the
+                                // copy stats which will also cache it in local storage
+                                const statString = stats
+                                    .map((e) => e.map((f) => f === false ? `X/${guesses[stage]}` : `${f}/${guesses[stage]}`).join('    '))
+                                    .join('\n');
+
+                                const output = `Board ${stage + 1} (${mapping[stage]} words): \n${statString}\n\n`;
+                                addToCopyStats(output);
+                            }}
+                            continuing={true}
+                            useToday={true}
+                            stage={stage}
+                        />}
+                    </div>
+                </Communicator.Provider>
             </>
         );
     }
-
-    // If its not finished then it should start an Auto selecting word game with all the properties for the current
-    // stage.
-    return (
-        <>
-            <div className={style.header}>
-                <h1>Mikordle</h1>
-            </div>
-            <div className={style.home}>
-                {<Auto
-                    key={`stage${stage}`}
-                    length={5}
-                    guesses={guesses[stage]}
-                    columns={columns[stage]}
-                    amount={mapping[stage]}
-                    onEnd={(losses: any, distribution: any, stats: (number | false)[][]) => {
-                        // On ending the metrics need to be merged into the global ones to produce a consistent result
-                        addToBoardAndTotalMetrics(mapping[stage], Object.keys(distribution).length, losses, distribution);
-
-                        // Either move on to the next stage or if this is the last stage (there are no further mappings)
-                        // then set that we are finished and cache the value into local storage for today
-                        if (mapping[stage + 1] === undefined) {
-                            completeToday();
-                            setFinished(true);
-                        } else {
-                            setTimeLimitedLocalStorageEntry('mikordle-stage', String(stage + 1));
-                            setStage((s) => s + 1);
-                        }
-
-                        // Also convert the statistics into a format which is nice and copy-pastable and add it to the
-                        // copy stats which will also cache it in local storage
-                        const statString = stats
-                            .map((e) => e.map((f) => f === false ? `X/${guesses[stage]}` : `${f}/${guesses[stage]}`).join('    '))
-                            .join('\n');
-
-                        const output = `Board ${stage + 1} (${mapping[stage]} words): \n${statString}\n\n`;
-                        addToCopyStats(output);
-                    }}
-                    continuing={true}
-                    useToday={true}
-                    stage={stage}
-                />}
-            </div>
-        </>
-    );
-};
+;
 
 export default Home;
